@@ -1,42 +1,62 @@
-
-# A very simple Flask Hello World app for you to get started with...
-
-from flask import Flask, request, make_response, redirect, abort
+from datetime import datetime
+from flask import Flask, render_template, request
+from flask_bootstrap import Bootstrap
+from flask_moment import Moment
 
 app = Flask(__name__)
+bootstrap = Bootstrap(app)
+moment = Moment(app)
 
-@app.route('/')
-def hello_world():
-    return """
-    <h1>Hello World!</h1>
-    <h2>Disciplina PTBDSWS</h2>
-    """
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
 
-@app.route('/user/<name>')
-def user(name):
-    return '<h1>Hello, {}!</h1>'.format(name)
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
 
-@app.route('/contextorequisicao')
-def context():
-    return f"""
-    Your browser is {request.user_agent}
-    """
+@app.route("/")
+def home():
 
-@app.route("/codigostatusdiferente")
-def status():
-    return "Bad request", 400
+    return render_template(
+        "home.html",
+        current_time=datetime.now()
+    )
 
-@app.route("/objetoresposta")
-def answer():
-    response = make_response("<h1>This document carries a cookie!</h1>")
-    response.set_cookie("answer", "true")
-    return response
+@app.route('/user/<name>/<pront>/<insti>')
+def user(name, pront, insti):
+    return render_template(
+        "user.html",
+        name=name,
+        pront=pront,
+        insti=insti
+    )
 
-@app.route("/redirecionamento ")
-def redirecting ():
-    return redirect("https://ptb.ifsp.edu.br/")
+@app.route('/contextorequisicao/<name>')
+def contextorequisicao(name):
+     return render_template(
+        "contextorequisicao.html",
+        name=name,
+        browser=request.headers.get('User-Agent'),
+        ip=request.remote_addr,
+        host=request.host
+    )
+
+#@app.route("/codigostatusdiferente")
+#def status():
+#    return "Bad request", 400
+
+#@app.route("/objetoresposta")
+#def answer():
+#    response = make_response("<h1>This document carries a cookie!</h1>")
+#    response.set_cookie("answer", "true")
+#    return response
+
+#@app.route("/redirecionamento ")
+#def redirecting ():
+#    return redirect("https://ptb.ifsp.edu.br/")
 
 
-@app.route("/abortar")
-def abort_page():
-    abort(404)
+#@app.route("/abortar")
+#def abort_page():
+#    abort(404)

@@ -1,0 +1,85 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Avaliação contínua: Aula 040{% endblock %}
+
+{% block head %}
+{{ super() }}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}">
+{% endblock %}
+
+
+{% block navbar %}
+
+<div class="navbar navbar-custom" role="navigation">
+
+    <div class="container">
+
+        <div class="navbar-header">
+
+            <button type="button"
+                    class="navbar-toggle"
+                    data-toggle="collapse"
+                    data-target=".navbar-collapse">
+
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+
+            </button>
+
+            <a class="navbar-brand" href="/">Avaliação contínua: Aula 040</a>
+
+        </div>
+
+        <div class="navbar-collapse collapse">
+
+            <ul class="nav navbar-nav">
+
+                <li>
+                    <a href="/"> Home </a>
+                </li>
+
+                <li>
+                    <a href="/user/Ana%20Julia%20Verutti/PT3019942/IFSP"> Identificação </a>
+                </li>
+
+                <li>
+                    <a href="/contextorequisicao/Ana%20Julia%20Verutt"> Contexto da requisição </a>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container">
+
+    {% block page_content %}
+    {% endblock %}
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+
+{{ moment.include_moment() }}
+
+{% endblock %}
