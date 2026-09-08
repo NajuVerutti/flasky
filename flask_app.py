@@ -1,4 +1,5 @@
-from datetime import datetime
+import os
+#from datetime import datetime
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
@@ -7,13 +8,47 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+
 class NameForm(FlaskForm):
   name = StringField('What is your name?', validators= [DataRequired()])
   submit = SubmitField('Submit')
 
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Chave forte'
+app.config['SQLALCHEMY_DATABASE_URI'] = \
+    'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+
+    def __repr__(self):
+        return '<Role %r>' % self.name
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    role = db.relationship('Role', backref='users')
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
@@ -36,14 +71,27 @@ def internal_server_error(e):
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-  name = None
-  form = NameForm()
-  if form.validate_on_submit():
-    name = form.name.data
-    form.name.data = ''
-  return render_template('formulario.html',
-                         form=form,
-                         name=name
+    form = NameForm()
+
+    if form.validate_on_submit():
+        username = form.name.data
+
+        user = User(
+            username=username,
+            role=Role.query.filter_by(name='User').first()
+        )
+
+        db.session.add(user)
+        db.session.commit()
+
+        form.name.data = ''
+
+    users = User.query.all()
+
+    return render_template(
+        'formulario.html',
+        form=form,
+        users=users
     )
 
 
