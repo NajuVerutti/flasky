@@ -67,11 +67,27 @@ body {
 
 .table {
     border: none;
+    border-collapse: collapse;
 }
 
-.table > thead > tr > th,
+/* Table headings */
+.table > thead > tr > th {
+    border-bottom: 2px solid #782359;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Body cells */
 .table > tbody > tr > td {
-    border: none;
+    border-top: none;
+    border-bottom: none;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* Lines only between body rows */
+.table > tbody > tr:not(:last-child) > td {
+    border-bottom: 1px solid #bf8ead;
 }
 
 .table-striped > tbody > tr:nth-of-type(odd) {

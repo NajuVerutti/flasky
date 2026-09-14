@@ -5,7 +5,10 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SelectField, SubmitField
+
+#------------------------------->  'SelectField' cria o menu dropdown
+
 from wtforms.validators import DataRequired
 
 from flask_sqlalchemy import SQLAlchemy
@@ -13,7 +16,10 @@ from flask_migrate import Migrate
 
 class NameForm(FlaskForm):
   name = StringField('What is your name?', validators= [DataRequired()])
+  role = SelectField('Role?:', choices=[ ('User', 'User'), ('Moderator', 'Moderator'), ('Admin', 'Administrator') ],  validators=[DataRequired()])
   submit = SubmitField('Submit')
+
+  #------------------->  forms agora tem: Input para nome; dropdown para Função e botão de Submit
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -75,10 +81,13 @@ def home():
 
     if form.validate_on_submit():
         username = form.name.data
+        selected_role = form.role.data
+        #------------------->  salva a opção escolhida no select
 
         user = User(
             username=username,
-            role=Role.query.filter_by(name='User').first()
+            role=Role.query.filter_by(name=selected_role).first()
+            #------------------->  procura função escolhida no db
         )
 
         db.session.add(user)
@@ -87,12 +96,21 @@ def home():
         form.name.data = ''
 
     users = User.query.all()
+    users_count = User.query.count()
+    #-------------------> contagem de registros
+
+    roles = Role.query.all()
+    roles_count = Role.query.count()
+    #-------------------> contagem da quantidade de funções
 
     return render_template(
         'formulario.html',
         form=form,
-        users=users
-    )
+        users=users,
+        users_count=users_count,
+        roles=roles,
+        roles_count=roles_count
+        )
 
 
 
