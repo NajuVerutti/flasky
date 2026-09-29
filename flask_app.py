@@ -84,16 +84,29 @@ def home():
         selected_role = form.role.data
         #------------------->  salva a opção escolhida no select
 
-        user = User(
-            username=username,
-            role=Role.query.filter_by(name=selected_role).first()
-            #------------------->  procura função escolhida no db
-        )
+        existing_user = User.query.filter_by(username=username).first()
+        #------------------->  função para verificar se o user já existe
 
-        db.session.add(user)
-        db.session.commit()
+        if existing_user is None: # cria usuário se constata que nao existe
+            user_role = Role.query.filter_by(name=selected_role).first()
+                                                #------------------->  procura função escolhida no db
 
-        form.name.data = ''
+            user = User(
+                username=username,
+                role=user_role
+            )
+
+            db.session.add(user)
+            db.session.commit()
+
+            form.name.data = ''
+
+            message = f'Usuário "{username}" cadastrado com sucesso!'
+            message_type = 'success'
+
+        else:
+            message = f'O usuário "{username}" já está cadastrado!'
+            message_type = 'warning'
 
     users = User.query.all()
     users_count = User.query.count()
@@ -109,8 +122,10 @@ def home():
         users=users,
         users_count=users_count,
         roles=roles,
-        roles_count=roles_count
-        )
+        roles_count=roles_count,
+        message=message if 'message' in locals() else None,
+        message_type=message_type if 'message_type' in locals() else None
+    )
 
 
 

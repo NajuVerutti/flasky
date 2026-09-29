@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% block title %}Avaliação contínua: Aula 060.C{% endblock %}
 
 {% block page_content %}
 
@@ -9,11 +8,20 @@
 </div>
 
 {{ wtf.quick_form(form) }}
+{% if message %}
+    <div class="alert alert-{{ message_type }}">
+        {{ message }}
+    </div>
+{% endif %}
 
 <hr>
 
 <h2>Usuários cadastrados</h2>
-<h4>Quantidade de usuários: {{ users_count }}</h4>
+<h4>Quantidade de usuários: {{ users_count }}</h4> <!--pesquisar a diferença do que foi feito para o {user_all | lenght}
+
+na linha de código foi usado:
+users = User.query.all()
+users_count = User.query.count()-->
 
 <table class="table table-striped table-bordered">
     <thead>
