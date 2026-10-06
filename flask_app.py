@@ -7,9 +7,7 @@ from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SubmitField
-
-#------------------------------->  'SelectField' cria o menu dropdown
+from wtforms import StringField, SelectField, BooleanField, SubmitField
 
 from wtforms.validators import DataRequired
 
@@ -19,6 +17,7 @@ from flask_migrate import Migrate
 class NameForm(FlaskForm):
   name = StringField('What is your name?', validators= [DataRequired()])
   role = SelectField('Role?:', choices=[ ('User', 'User'), ('Moderator', 'Moderator'), ('Admin', 'Administrator') ],  validators=[DataRequired()])
+  send_confirmation = BooleanField()
   submit = SubmitField('Submit')
 
   #------------------->  forms agora tem: Input para nome; dropdown para Função e botão de Submit
@@ -71,18 +70,18 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 
 #-------------------------------> Função para enviar e-mail pelo Mailgun
-def send_simple_message(username, role_name):
+def send_simple_message(username, role_name, send_confirmation):
     api_key = app.config['API_KEY']
     api_url = app.config['API_URL']
     sender = app.config['API_FROM']
-    professor_email = app.config['FLASKY_ADMIN']
+    second_email = app.config['FLASKY_ADMIN']
     personal_email = app.config['PERSONAL_EMAIL']
     student_name = app.config['STUDENT_NAME']
 
     # Verificação de configurações necessárias preenchidas
     if not all([
         api_key, api_url, sender,
-        professor_email, personal_email, student_name
+        personal_email, student_name
     ]):
         app.logger.error('Mailgun configuration is incomplete.')
         return False
@@ -90,10 +89,18 @@ def send_simple_message(username, role_name):
     subject = '[Flasky] Novo usuário cadastrado'
 
     text = (
-        f'Um novo usuário foi cadastrado por {student_name}\n\n'
+        f'Um novo usuário foi cadastrado.\n\n'
         f'Nome do usuário: {username}\n'
-        f'Função: {role_name}'
+        f'Função: {role_name}\n'
+        f'Dados enviados a: {student_name}'
     )
+
+    #Eu sempre recebo o e-mail
+    recipients = [personal_email]
+
+    # o outro recebe somente se o checkbox estiver marcado
+    if send_confirmation:
+        recipients.append(second_email)
 
     try:
         response = requests.post(
@@ -101,7 +108,7 @@ def send_simple_message(username, role_name):
             auth=('api', api_key),
             data={
                 'from': sender,
-                'to': [professor_email, personal_email],
+                'to': recipients,
                 'subject': subject,
                 'text': text
             },
@@ -113,7 +120,7 @@ def send_simple_message(username, role_name):
         return True
 
     except requests.RequestException:
-                # Registra o erro sem expor a chave da API
+        # Registra o erro sem expor a chave da API
         app.logger.exception('Mailgun email request failed.')
         return False
 
@@ -139,6 +146,7 @@ def internal_server_error(e):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     form = NameForm()
+    form.send_confirmation.label.text = f"Enviar e-mail para: {app.config['FLASKY_ADMIN']}"
 
     message = None
     message_type = None
@@ -164,8 +172,11 @@ def home():
             db.session.commit()
 
             #-------------------> Envia e-mail após cadastrar o novo usuário
-            email_sent = send_simple_message(username, user_role.name)
-
+            email_sent = send_simple_message(
+                username,
+                user_role.name,
+                form.send_confirmation.data
+                )
             form.name.data = ''
 
             if email_sent:
