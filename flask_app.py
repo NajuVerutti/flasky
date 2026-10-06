@@ -36,6 +36,7 @@ app.config['API_FROM'] = os.environ.get('API_FROM')
 app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
 app.config['PERSONAL_EMAIL'] = os.environ.get('PERSONAL_EMAIL')
 app.config['STUDENT_NAME'] = os.environ.get('STUDENT_NAME')
+app.config['STUDENT_ID'] = os.environ.get('STUDENT_ID')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
@@ -77,11 +78,12 @@ def send_simple_message(username, role_name, send_confirmation):
     second_email = app.config['FLASKY_ADMIN']
     personal_email = app.config['PERSONAL_EMAIL']
     student_name = app.config['STUDENT_NAME']
+    student_id = app.config['STUDENT_ID']
 
     # Verificação de configurações necessárias preenchidas
     if not all([
         api_key, api_url, sender,
-        personal_email, student_name
+        personal_email, student_name, student_id
     ]):
         app.logger.error('Mailgun configuration is incomplete.')
         return False
@@ -92,7 +94,8 @@ def send_simple_message(username, role_name, send_confirmation):
         f'Um novo usuário foi cadastrado.\n\n'
         f'Nome do usuário: {username}\n'
         f'Função: {role_name}\n'
-        f'Dados enviados a: {student_name}'
+        f'Dados enviados a: {student_name}\n'
+        f'{student_id}'
     )
 
     #Eu sempre recebo o e-mail
