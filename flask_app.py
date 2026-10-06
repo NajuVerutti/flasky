@@ -1,4 +1,6 @@
 import os
+import requests
+
 #from datetime import datetime
 from flask import Flask, render_template, request
 from flask_bootstrap import Bootstrap
@@ -26,6 +28,16 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'Chave forte'
+
+# Mailgun config
+# As informações são obtidas pelas variáveis de ambiente
+app.config['API_KEY'] = os.environ.get('API_KEY')
+app.config['API_URL'] = os.environ.get('API_URL')
+app.config['API_FROM'] = os.environ.get('API_FROM')
+app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
+app.config['PERSONAL_EMAIL'] = os.environ.get('PERSONAL_EMAIL')
+app.config['STUDENT_NAME'] = os.environ.get('STUDENT_NAME')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -58,6 +70,55 @@ class User(db.Model):
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
+#-------------------------------> Função para enviar e-mail pelo Mailgun
+def send_simple_message(username, role_name):
+    api_key = app.config['API_KEY']
+    api_url = app.config['API_URL']
+    sender = app.config['API_FROM']
+    professor_email = app.config['FLASKY_ADMIN']
+    personal_email = app.config['PERSONAL_EMAIL']
+    student_name = app.config['STUDENT_NAME']
+
+    # Verificação de configurações necessárias preenchidas
+    if not all([
+        api_key, api_url, sender,
+        professor_email, personal_email, student_name
+    ]):
+        app.logger.error('Mailgun configuration is incomplete.')
+        return False
+
+    subject = '[Flasky] Novo usuário cadastrado'
+
+    text = (
+        f'Um novo usuário foi cadastrado por {student_name}\n\n'
+        f'Nome do usuário: {username}\n'
+        f'Função: {role_name}'
+    )
+
+    try:
+        response = requests.post(
+            api_url,
+            auth=('api', api_key),
+            data={
+                'from': sender,
+                'to': [professor_email, personal_email],
+                'subject': subject,
+                'text': text
+            },
+            timeout=20
+        )
+
+        response.raise_for_status()
+        app.logger.info('Mailgun accepted the email request.')
+        return True
+
+    except requests.RequestException:
+                # Registra o erro sem expor a chave da API
+        app.logger.exception('Mailgun email request failed.')
+        return False
+
+
+
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -79,8 +140,11 @@ def internal_server_error(e):
 def home():
     form = NameForm()
 
+    message = None
+    message_type = None
+
     if form.validate_on_submit():
-        username = form.name.data
+        username = form.name.data.strip()
         selected_role = form.role.data
         #------------------->  salva a opção escolhida no select
 
@@ -99,10 +163,17 @@ def home():
             db.session.add(user)
             db.session.commit()
 
+            #-------------------> Envia e-mail após cadastrar o novo usuário
+            email_sent = send_simple_message(username, user_role.name)
+
             form.name.data = ''
 
-            message = f'Usuário "{username}" cadastrado com sucesso!'
-            message_type = 'success'
+            if email_sent:
+                message = f'Usuário "{username}" cadastrado com sucesso! E-mail enviado.'
+                message_type = 'success'
+            else:
+                message = f'Usuário "{username}" cadastrado, mas o e-mail não foi enviado.'
+                message_type = 'warning'
 
         else:
             message = f'O usuário "{username}" já está cadastrado!'
@@ -123,8 +194,8 @@ def home():
         users_count=users_count,
         roles=roles,
         roles_count=roles_count,
-        message=message if 'message' in locals() else None,
-        message_type=message_type if 'message_type' in locals() else None
+        message=message,
+        message_type=message_type
     )
 
 
